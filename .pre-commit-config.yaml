@@ -1,0 +1,78 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v4.4.0"
+    hooks:
+      - id: check-added-large-files
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: no-commit-to-branch
+        args:
+          - --branch=main
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v3.0.0-alpha.4"
+    hooks:
+      - id: prettier
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: "v1.77.1"
+    hooks:
+      - id: terraform_fmt
+        files: ""
+        args:
+          - --args=-no-color
+          - --args=-diff
+
+      - id: terraform_validate
+
+      - id: terraform_docs
+        args:
+          - path-to-file=README.md
+          - add-to-existing-file=true
+          - create-file-if-not-exist=true
+
+      # Throwing an error "Failed to initialize plugins; Plugin `aws` not found. Did you run `tflint --init`?"
+      # - id: terraform_tflint
+      #   args:
+      #     - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
+
+      - id: terrascan
+        args:
+          - --args=--config-path=.terrascan.toml
+          - --args=--iac-dir local/kind
+          - --args=--iac-type=terraform
+          - --args=--policy-type=aws
+
+      # Fails because local/kind/argocd has no terraform configuration files
+      - id: terrascan
+        args:
+          - --args=--iac-dir argocd
+          - --args=--iac-type=k8s
+          - --args=--policy-type=k8s
+
+      - id: terraform_tfsec
+        files: ^local/kind/
+        args:
+          - >
+            --args=--format lovely
+            --no-color
+      - id: tfupdate
+        name: Autoupdate AWS provider versions
+        args:
+          - --args=provider aws # Will be pined to latest version
+
+      - id: infracost_breakdown
+        args:
+          - --args=--path=./local/kind
+          - --hook-config='.currency == "USD"'
+        verbose: true # Always show costs
+
+  - repo: https://github.com/zricethezav/gitleaks
+    rev: "v8.16.0"
+    hooks:
+      - id: gitleaks
+        args:
+          - hook-config=--config .gitleaks.toml
