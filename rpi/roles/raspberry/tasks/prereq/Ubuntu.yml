@@ -1,0 +1,92 @@
+---
+- name: Enable cgroup via boot commandline if not already enabled for Ubuntu on a Raspberry Pi
+  lineinfile:
+    path: /boot/firmware/cmdline.txt
+    backrefs: yes
+    regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+    line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+  notify: reboot
+
+- name: Install kernel modules for Ubuntu on a Raspberry Pi
+  apt:
+    name: linux-modules-extra-raspi
+    state: present
+  notify: reboot
+
+- name: Ensure Python3 and pip are installed
+  ansible.builtin.package:
+    name:
+      - python3
+      - python3-pip
+    state: present
+
+- name: Ensure Python kubernetes library is installed
+  ansible.builtin.pip:
+    name: kubernetes
+    state: present
+  when: "'master' in group_names"
+
+- name: Install Helm
+  ansible.builtin.get_url:
+    url: https://get.helm.sh/helm-v3.5.4-linux-arm.tar.gz
+    dest: /tmp/helm-v3.5.4-linux-arm.tar.gz
+    mode: 0755
+  when: "'master' in group_names"
+
+- name: Install helm diff plugin
+  kubernetes.core.helm_plugin:
+    state: present
+    plugin_path: https://github.com/databus23/helm-diff
+  when: "'master' in group_names"
+
+- name: Check if snapd is installed
+  command: dpkg-query -W -f='${Status}' snapd
+  register: snapd_installed
+  changed_when: false
+  ignore_errors: true
+
+- name: Get list of snap packages
+  command: snap list
+  register: snaps
+  changed_when: false
+  when: snapd_installed.stdout == "install ok installed"
+
+- name: Uninstall snap packages
+  command: "snap remove {{ item }}"
+  loop: "{{ snaps.stdout_lines[1:] | map('regex_replace', ' .*', '') | list }}"
+  ignore_errors: true
+  when: snapd_installed.stdout == "install ok installed"
+
+- name: Uninstall snapd
+  apt:
+    name: snapd
+    state: absent
+    purge: yes
+    autoremove: yes
+  when: snapd_installed.stdout == "install ok installed"
+
+- name: Install Fake RTC clock
+  apt:
+    name: fake-hwclock
+    state: present
+
+- name: Install utility scripts
+  apt:
+    name: libraspberrypi-bin
+    state: present
+
+- name: Install open-iscsid
+  apt:
+    name: open-iscsi
+    state: present
+
+- name: Ensure iscisd is enabled
+  ansible.builtin.service:
+    name: open-iscsi
+    enabled: yes
+    state: started
+
+- name: Install multipath-tools
+  apt:
+    name: multipath-tools
+    state: present

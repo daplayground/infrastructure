@@ -1,0 +1,36 @@
+---
+- name: Add cert-manager helm chart repo
+  community.kubernetes.helm_repository:
+    name: cert-manager
+    url: https://charts.jetstack.io
+    state: present
+  when: "'master' in group_names"
+
+- name: Install cert-manager helm chart
+  community.kubernetes.helm:
+    atomic: true
+    name: cert-manager
+    chart_ref: cert-manager/cert-manager
+    chart_version: 1.12.1
+    release_namespace: cert-manager
+    kubeconfig: /home/{{ ansible_user }}/.kube/config
+    create_namespace: true
+    values:
+      installCRDs: true
+  when: "'master' in group_names"
+
+- name: Copy cert-manager resource manifests
+  template:
+    src: templates/resources.yaml.j2
+    dest: /tmp/resources.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: "'master' in group_names"
+
+- name: Apply cert-manager resources
+  community.kubernetes.k8s:
+    state: present
+    kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+    src: /tmp/resources.yaml
+  when: "'master' in group_names"

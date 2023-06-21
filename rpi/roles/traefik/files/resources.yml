@@ -1,0 +1,50 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik-system
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`traefik`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard-https
+  namespace: traefik-system
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: "Host(`traefik.{{ domain }}`)"
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    # secretName: traefik-dashboard-tls
+    secretName: traefik-prod-tls
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-rpi-dashboard-https
+  namespace: traefik-system
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.rpi.{{ domain }}`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: traefik-prod-tls

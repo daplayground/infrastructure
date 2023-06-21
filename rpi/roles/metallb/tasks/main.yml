@@ -1,0 +1,62 @@
+---
+# - name: Create MetalLB namespace
+#   community.kubernetes.k8s:
+#     state: present
+#     kubeconfig: ~{{ ansible_user }}/.kube/config
+#     definition:
+#       apiVersion: v1
+#       kind: Namespace
+#       metadata:
+#         name: metallb-system
+#   when: "'master' in group_names"
+
+# - name: Apply MetalLB IPAddressPool
+#   community.kubernetes.k8s:
+#     state: present
+#     kubeconfig: ~{{ ansible_user }}/.kube/config
+#     definition:
+#       apiVersion: metallb.io/v1beta1
+#       kind: IPAddressPool
+#       metadata:
+#         name: production
+#         namespace: metallb-system
+#       spec:
+#         addresses:
+#         - 192.168.1.240/28
+#   when: "'master' in group_names"
+
+- name: Add MetalLB helm chart repo
+  community.kubernetes.helm_repository:
+    name: metallb
+    url: https://metallb.github.io/metallb
+    state: present
+  when: "'master' in group_names"
+
+- name: Install MetalLB helm chart
+  community.kubernetes.helm:
+    atomic: true
+    name: metallb
+    chart_ref: metallb/metallb
+    chart_version: 0.13.9
+    release_namespace: metallb-system
+    kubeconfig: /home/{{ ansible_user }}/.kube/config
+    create_namespace: true
+    # values:
+    #   existingConfigMap: metallb-config
+  when: "'master' in group_names"
+
+- name: Copy Metallb resource manifests
+  copy:
+    src: files/resources.yaml
+    dest: /tmp/resources.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: "'master' in group_names"
+
+- name: Apply MetalLB resources
+  community.kubernetes.k8s:
+    state: present
+    kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+    src: /tmp/resources.yaml
+  when: "'master' in group_names"
