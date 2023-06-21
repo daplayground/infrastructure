@@ -33,3 +33,7 @@ daplayground-config
 
 # TFLint
 .tflint/
+.tflint.d/
+
+# Infracost
+.infracost/
