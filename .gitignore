@@ -37,3 +37,13 @@ daplayground-config
 
 # Infracost
 .infracost/
+
+# Node
+node_modules/
+
+### direnv ###
+.direnv
+.envrc
+
+# Kubernetes
+terraform/02-cluster/kubeconfig
