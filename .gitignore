@@ -46,4 +46,4 @@ node_modules/
 .envrc
 
 # Kubernetes
-terraform/02-cluster/kubeconfig
+aws/terraform/02-cluster/kubeconfig
