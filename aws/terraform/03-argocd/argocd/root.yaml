@@ -1,0 +1,46 @@
+applications:
+  - name: store
+    namespace: argocd
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    project: store
+    sources:
+      - repoURL: https://github.com/aacecandev/playground.git
+        path: argocd/apps
+        targetRevision: HEAD
+    destination:
+      server: https://kubernetes.default.svc
+      namespace: store
+    syncPolicy:
+      automated:
+        prune: false
+        selfHeal: false
+
+projects:
+  - name: store
+    namespace: argocd
+    additionalLabels: {}
+    additionalAnnotations: {}
+    finalizers:
+      - resources-finalizer.argocd.argoproj.io
+    description: Store Project
+    sourceRepos:
+      - "*"
+    destinations:
+      - namespace: "argocd"
+        server: https://kubernetes.default.svc
+      - namespace: "store"
+        server: https://kubernetes.default.svc
+      - namespace: "harbor"
+        server: https://kubernetes.default.svc
+      - namespace: "monitoring"
+        server: https://kubernetes.default.svc
+      - namespace: "redis"
+        server: https://kubernetes.default.svc
+    clusterResourceWhitelist:
+      - group: "*"
+        kind: "*"
+
+applicationsets: []
+
+extensions: []

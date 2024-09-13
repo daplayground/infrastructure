@@ -28,3 +28,4 @@ runcmd:
   - /bin/bash -x /home/ec2-user/cloud-init-script.sh > happened
   - echo $(cat /proc/cmdline) > /home/ec2-user/cmdline.txt
   - kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f https://raw.githubusercontent.com/projectcalico/calico/master/manifests/calico.yaml
+  - kubectl --kubeconfig /etc/kubernetes/admin.conf taint nodes --all node-role.kubernetes.io/master-

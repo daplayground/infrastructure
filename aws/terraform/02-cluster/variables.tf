@@ -4,9 +4,9 @@ variable "region" {
 }
 
 variable "ssh_public_key" {
-  default = "../../master.pub"
+  default = "../../../master.pub"
 }
 
 variable "ssh_private_key" {
-  default = "../../master"
+  default = "../../../master"
 }
