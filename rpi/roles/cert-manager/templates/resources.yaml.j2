@@ -1,0 +1,85 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: letsencrypt-aws-credentials
+  namespace: cert-manager
+type: Opaque
+data:
+  aws_secret_access_key: "{{ aws_secret_access_key | b64encode }}"
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: "{{ email }}"
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource used to store the account's private key.
+      name: letsencrypt-staging
+    solvers:
+      - dns01:
+          route53:
+            region: us-east-1
+            hostedZoneID: "{{ aws_hosted_zone_id }}"
+            accessKeyID: "{{ aws_access_key_id }}"
+            secretAccessKeySecretRef:
+              name: letsencrypt-aws-credentials
+              key: aws_secret_access_key
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik-dashboard
+  namespace: traefik-system
+spec:
+  commonName: "traefik.{{ aws_hosted_zone_name }}"
+  secretName: traefik-dashboard-tls
+  dnsNames:
+    - "traefik.{{ aws_hosted_zone_name }}"
+  issuerRef:
+    name: letsencrypt-staging
+    kind: ClusterIssuer
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: "{{ email }}"
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource used to store the account's private key.
+      name: letsencrypt-prod
+    solvers:
+      - dns01:
+          route53:
+            region: us-east-1
+            hostedZoneID: "{{ aws_hosted_zone_id }}"
+            accessKeyID: "{{ aws_access_key_id }}"
+            secretAccessKeySecretRef:
+              name: letsencrypt-aws-credentials
+              key: aws_secret_access_key
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik-prod
+  namespace: traefik-system
+spec:
+  commonName: "*.rpi.{{ aws_hosted_zone_name }}"
+  secretName: traefik-prod-tls
+  dnsNames:
+    - "*.rpi.{{ aws_hosted_zone_name }}"
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

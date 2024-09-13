@@ -1,0 +1,74 @@
+---
+- name: Add blacklist to multipath.conf
+  blockinfile:
+    path: /etc/multipath.conf
+    block: |
+      blacklist {
+        devnode "^sd[a-z0-9]+"
+      }
+  notify: restart multipathd
+
+- name: Add Longhorn helm chart repo
+  community.kubernetes.helm_repository:
+    name: longhorn
+    url: https://charts.longhorn.io
+    state: present
+  when: "'master' in group_names"
+
+- name: Install Longhorn helm chart
+  community.kubernetes.helm:
+    atomic: true
+    name: longhorn
+    chart_ref: longhorn/longhorn
+    chart_version: 1.4.2
+    release_namespace: longhorn-system
+    kubeconfig: /home/{{ ansible_user }}/.kube/config
+    create_namespace: true
+    values:
+      defaultSettings.defaultDataPath: "/storage"
+  when: "'master' in group_names"
+
+- name: Copy Longhorn resource manifests
+  copy:
+    src: files/resources.yaml
+    dest: /tmp/resources.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: "'master' in group_names"
+
+- name: Replace sensitive value in resources.yaml
+  ansible.builtin.replace:
+    path: /tmp/resources.yaml
+    regexp: "{{ domain }}"
+    replace: "{{ aws_hosted_zone_name }}"
+  when: "'master' in group_names"
+
+- name: Apply Longhorn resources
+  community.kubernetes.k8s:
+    state: present
+    kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+    src: /tmp/resources.yaml
+  when: "'master' in group_names"
+# - name: Add HTTPS IngressRoute for Longhorn dashboard
+#   community.kubernetes.k8s:
+#     state: present
+#     kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+#     definition:
+#       apiVersion: traefik.containo.us/v1alpha1
+#       kind: IngressRoute
+#       metadata:
+#         name: longhorn-rpi-dashboard-https
+#         namespace: traefik-system
+#       spec:
+#         entryPoints:
+#           - websecure
+#         routes:
+#         - match: Host(`storage.rpi.aacecan.com`)
+#           kind: Rule
+#           services:
+#           - name: api@internal
+#             kind: TraefikService
+#         tls:
+#           secretName: traefik-prod-tls
+#   when: "'master' in group_names"

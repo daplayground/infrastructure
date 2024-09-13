@@ -37,3 +37,11 @@ daplayground-config
 
 # Infracost
 .infracost/
+
+# rpi
+kubeconfig
+vault.yml
+rpi/ssh_keys/
+
+# Node
+node_modules/

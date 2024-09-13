@@ -1,0 +1,60 @@
+---
+- name: Copy Traefik helm chart values file
+  copy:
+    src: files/values.yaml
+    dest: /tmp/values.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: "'master' in group_names"
+
+- name: Add Traefik helm chart repo
+  community.kubernetes.helm_repository:
+    name: traefik
+    url: https://helm.traefik.io/traefik
+    state: present
+  when: "'master' in group_names"
+
+- name: Install Traefik helm chart
+  community.kubernetes.helm:
+    atomic: yes
+    name: traefik
+    chart_ref: traefik/traefik
+    chart_version: 23.0.1
+    create_namespace: true
+    release_namespace: traefik-system
+    kubeconfig_path: "/home/{{ ansible_user }}/.kube/config"
+    values_files:
+      - /tmp/values.yaml
+  when: "'master' in group_names"
+
+- name: Copy Traefik resource manifests
+  copy:
+    src: files/resources.yaml
+    dest: /tmp/resources.yaml
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: 0644
+  when: "'master' in group_names"
+
+- name: Replace sensitive value in resources.yaml
+  ansible.builtin.replace:
+    path: /tmp/resources.yaml
+    regexp: "{{ domain }}"
+    replace: "{{ aws_hosted_zone_name }}"
+  when: "'master' in group_names"
+
+- name: Apply Traefik resources
+  community.kubernetes.k8s:
+    state: present
+    kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+    src: /tmp/resources.yaml
+  when: "'master' in group_names"
+
+- name: Add traefik to /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "192.168.1.240 traefik"
+    # state: present
+    state: absent
+  delegate_to: localhost

@@ -1,0 +1,74 @@
+# ---
+# - hosts: raspberry_pis
+#   gather_facts: True
+#   become: True
+#   vars_files:
+#     - vault.yml
+
+# tasks:
+# - name: Ping
+#   ping:
+
+# - name: Modify config.txt
+#   ansible.builtin.lineinfile:
+#     path: /boot/firmware/config.txt
+#     line: "{{ item }}"
+#     create: yes
+#   loop:
+#     - 'gpu_mem=16'
+#     - 'dtoverlay=disable-bt'
+#     - 'dtoverlay=disable-wifi'
+
+# - name: Enable cgroup via boot commandline if not already enabled for Ubuntu on a Raspberry Pi
+#   lineinfile:
+#     path: /boot/firmware/cmdline.txt
+#     backrefs: yes
+#     regexp: '^((?!.*\bcgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory\b).*)$'
+#     line: '\1 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory'
+#   notify: reboot
+
+---
+- hosts: k3s_cluster
+  gather_facts: True
+  become: True
+  vars_files:
+    - vault.yml
+  roles:
+    # - {role: prereq}
+    # - {role: download}
+    # - {role:  raspberry}
+    # - {role: k3s/master, when: "'master' in group_names"}
+    # - {role: k3s/node, when: "'node' in group_names"}
+    # - {role: metallb, when: "'master' in group_names"}
+    # - {role: traefik, when: "'master' in group_names"}
+    # - {role: cert-manager, when: "'master' in group_names"}
+    - { role: longhorn, when: "'master' in group_names" }
+  tasks:
+    # - name: Fetch kubeconfig from master
+    #   fetch:
+    #     src: /etc/rancher/k3s/k3s.yaml
+    #     dest: ./kubeconfig
+    #     flat: yes
+    #   become: true
+    #   # delegate_to: master
+    #   when: "'master' in group_names"
+    # - name: Replace localhost with master IP in kubeconfig
+    #   replace:
+    #     path: ./kubeconfig
+    #     regexp: '(localhost|127\.0\.0\.1)'
+    #     replace: "{{ hostvars[groups['master'][0]]['ansible_host'] }}"
+    #   delegate_to: localhost
+    #   run_once: true
+# - hosts: master
+#   become: True
+#   vars_files:
+#     - vault.yml
+#   roles:
+#     - role: k3s/master
+
+# - hosts: node
+#   become: True
+#   vars_files:
+#     - vault.yml
+#   roles:
+#     - role: k3s/node

@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: "v4.4.0"
+    rev: "v4.6.0"
     hooks:
       - id: check-added-large-files
       - id: trailing-whitespace
@@ -13,12 +13,12 @@ repos:
           - --branch=main
 
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: "v3.0.0-alpha.4"
+    rev: "v4.0.0-alpha.8"
     hooks:
       - id: prettier
 
   - repo: https://github.com/antonbabenko/pre-commit-terraform
-    rev: "v1.77.1"
+    rev: "v1.95.0"
     hooks:
       - id: terraform_fmt
         files: ""
@@ -71,7 +71,7 @@ repos:
         verbose: true # Always show costs
 
   - repo: https://github.com/zricethezav/gitleaks
-    rev: "v8.16.0"
+    rev: "v8.18.4"
     hooks:
       - id: gitleaks
         args:
